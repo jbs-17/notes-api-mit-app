@@ -13,12 +13,12 @@ export const authGoogleMakeAuthReqMiddleware: Handler = async (req, res, next) =
        next();
 }
 
-export async function checkExpirationAuthRequest(authReqDoc: AuthReqDoc) {
+export async function checkExpirationAuthRequest(authReqDoc: Awaited<ReturnType<typeof findOneAuthReq>>) {
        let expired = false;
        const diffInMills = Date.now() - authReqDoc.created_at.getTime();
        const diffInMinutes = diffInMills / 1000 / 60;
 
-       if (diffInMinutes > 5 && authReqDoc.status === "PENDING") { // kedaluarsa jika dibuat 5 menit lalu
+       if (diffInMinutes > 1 && authReqDoc.status === "PENDING") { // kedaluarsa jika dibuat 5 menit lalu
               authReqDoc = await updateAuthReqStatusExpired(authReqDoc.auth_req_id);
               expired = true;
        }
@@ -50,7 +50,7 @@ export const authGoogleCallbackMiddleware: Handler = async (req: Request, res: R
        }
 
        // cari di db 
-       const authReqDoc = await findOneAuthReq(decodedState.auth_req_id);
+       let authReqDoc = await findOneAuthReq(decodedState.auth_req_id);
 
        if (!authReqDoc) throw new AppError(`Invalid Auth Request`, 404);
 
@@ -60,21 +60,24 @@ export const authGoogleCallbackMiddleware: Handler = async (req: Request, res: R
               return res.redirect("/auth-google-failed.html?login_status=failed");
        }
 
-       // kalau udah sukses
-       if (authReqDoc.status === "SUCCESS")
-              return res.redirect("/auth-google-success.html?login_status=success");
-
        // kalau udah gagal
        if (authReqDoc.status === "FAILED")
               return res.redirect("/auth-google-failed.html?login_status=failed");
 
-       // callbacck hanya mnerima yang masih statusnya pending
-       if (authReqDoc.status !== "PENDING")
-              return res.status(200).json(authReqDoc);
+       // kalau udah sukses
+       if (authReqDoc.status === "SUCCESS")
+              return res.redirect("/auth-google-success.html?login_status=success");
 
        // jika pending tapi sudah waktu kedaluarsa
        const isExpired = await checkExpirationAuthRequest(authReqDoc);
-       if (isExpired.expired) return res.status(400).json(isExpired.authReqDoc);
+       authReqDoc = isExpired.authReqDoc;
+
+       if (authReqDoc.status === "EXPIRED")
+              return res.redirect("/auth-google-expired.html?login_status=expired");
+
+
+       // callbacck hanya mnerima yang masih statusnya pending
+
 
        // ini harus ada  : https://oauth2.example.com/auth?code=4/P7q7W91a-oMsCeLvIaQm6bTrgtp7
        if (!code || typeof code !== 'string') {
