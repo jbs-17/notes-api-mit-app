@@ -4,14 +4,12 @@
   "dependencies": {
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.3.2",
+    "axios": "^1.13.6",
     "express": "5.1.0",
     "jsonwebtoken": "^9.0.3",
-    "nanoid": "^5.1.6"
-  },
-  "scripts": {
-      "dev": "bun x nodemon src/index.ts",
-      "build": "bun x tsc",
-      "start": "bun x dist/index.js"
+    "mongodb": "^7.1.0",
+    "nanoid": "^5.1.6",
+    "pino": "^10.3.1"
   },
   "devDependencies": {
     "@types/express": "5.0.0",
