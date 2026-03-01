@@ -64,7 +64,7 @@ export const authGoogleCallbackMiddleware: Handler = async (req: Request, res: R
 
        // kalau udah sukses
        if (authReqDoc.status === "SUCCESS")
-              return        res.type("html").sendFile("./components/auth-google-success.html", {root : process.cwd()});
+              return res.redirect("auth-google-success.html");
 
        // callbacck hanya mnerima yang masih statusnya pending
        if (authReqDoc.status !== "PENDING")

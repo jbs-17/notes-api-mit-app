@@ -13,11 +13,14 @@ import path from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express()
+const app = express();
+
+// serve file di folder public
+app.use(express.static("public"));
 
 app.get("/", async(req,res)=>{
-  res.type("html").sendFile(path.join(__dirname, "../components/index.html"));
-})
+  res.redirect("index.html");
+});
 
 app.get('/health', (req, res) => {
   res.json({
