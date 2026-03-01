@@ -19,7 +19,7 @@ const app = express();
 app.use(express.static("public"));
 
 app.get("/", async(req,res)=>{
-  res.redirect("index.html");
+  res.redirect("/index.html");
 });
 
 app.get('/health', (req, res) => {
