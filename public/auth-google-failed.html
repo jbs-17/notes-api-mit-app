@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>Login Failed</title>
+
+       <style>
+              body {
+                     margin: 0;
+                     font-family: Arial, sans-serif;
+                     background: linear-gradient(to bottom, #1e5799, #2989d8);
+                     display: flex;
+                     justify-content: center;
+                     align-items: center;
+                     height: 100vh;
+                     color: white;
+              }
+
+              .card {
+                     background: rgba(255, 255, 255, 0.1);
+                     padding: 40px;
+                     border-radius: 15px;
+                     text-align: center;
+                     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+                     width: 87%;
+                     max-width: 400px;
+              }
+
+              h2 {
+                     margin-bottom: 10px;
+              }
+
+              p {
+                     font-size: 14px;
+                     opacity: 0.9;
+              }
+       </style>
+</head>
+
+<body>
+
+       <div class="card">
+              <h2>Login Failed or Canceled</h2>
+              <p>Returning to the app...</p>
+       </div>
+
+       <script>
+              function sendSuccessToApp() {
+                     if (window.AppInventor) {
+                            window.AppInventor.setWebViewString("LOGIN_FAILED");
+                     }
+              }
+
+              setTimeout(sendSuccessToApp, 2500);
+       </script>
+
+</body>
+
+</html>

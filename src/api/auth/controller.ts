@@ -23,7 +23,7 @@ export const authGoogleCallbackController: Handler = async (req, res, next) => {
 
        await authGoogleCallbackService(authReqDoc, code, req.ip);
 
-       res.redirect("/auth-google-success.html");
+       res.redirect("/auth-google-success.html?login_status=success");
 }
 
 

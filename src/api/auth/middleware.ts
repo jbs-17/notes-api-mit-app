@@ -57,14 +57,16 @@ export const authGoogleCallbackMiddleware: Handler = async (req: Request, res: R
        // https://oauth2.example.com/auth?error=access_denied
        if (error) {
               const authReqDocUpdated = await updateAuthReqStatusFailed(authReqDoc.auth_req_id, error.toString());
-              return res.status(400).json(authReqDocUpdated);
+              return res.redirect("/auth-google-failed.html?login_status=failed");
        }
-
-
 
        // kalau udah sukses
        if (authReqDoc.status === "SUCCESS")
-              return res.redirect("/auth-google-success.html");
+              return res.redirect("/auth-google-success.html?login_status=success");
+
+       // kalau udah gagal
+       if (authReqDoc.status === "FAILED")
+              return res.redirect("/auth-google-failed.html?login_status=failed");
 
        // callbacck hanya mnerima yang masih statusnya pending
        if (authReqDoc.status !== "PENDING")
