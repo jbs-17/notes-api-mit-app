@@ -1,16 +1,18 @@
 import type { Handler } from "express";
-import { authGoogleReqService, authGoogleCallbackService, authGoogleCheckRequestService } from "./service.js";
+import { authGoogleMakeAuthReqService, authGoogleCallbackService, authGoogleCheckRequestService } from "./service.js";
 import { findOneAuthReq } from "./repository.js";
-import { UserDoc } from "./types.js";
+import { AuthReqDoc, UserDoc } from "./types.js";
+import { nanoid } from "nanoid";
+import path from "path";
 
 
 
-export const authGoogleReqController: Handler = async (req, res, next) => {
-       const { auth_req_id } = req.query;
+export const authGoogleMakeAuthReqController: Handler = async (req, res, next) => {
+       const auth_req_id = nanoid(17);
 
-       const { authGoogleUrl } = await authGoogleReqService(auth_req_id as string);
+       const { auth_google_url } = await authGoogleMakeAuthReqService(auth_req_id as string);
 
-       res.redirect(authGoogleUrl);
+       res.json({ auth_google_url, auth_req_id });
 }
 
 
@@ -21,18 +23,17 @@ export const authGoogleCallbackController: Handler = async (req, res, next) => {
 
        await authGoogleCallbackService(authReqDoc, code, req.ip);
 
-       res.json({ message: "Auth Success" })
+       res.type("html").sendFile(path.join(process.cwd(), "../../../components/auth-google-success.html"));
 }
 
 
 export const authGoogleCheckRequestController: Handler = async (req, res, next) => {
-       const { auth_req_id } = req.query;
-       const data = await authGoogleCheckRequestService(auth_req_id as string);
-
-       res.json(data);
+       res.json(res.locals.authReqDoc as AuthReqDoc);
 }
 
-export const getProfileController: Handler = async (req, res, next) =>{
+
+
+export const getProfileController: Handler = async (req, res, next) => {
        const { essential: { email, name, picture }, timestamps: { created_at, updated_at } } = res.locals.user as UserDoc || {};
        const data = {
               essential: { email, name, picture },

@@ -4,11 +4,12 @@ import { ObjectId } from "mongodb";
 
 
 
-export async function insertAuthGoogleReqId(auth_req_id: string) {
+export async function insertAuthGoogleReqId(auth_req_id: string, auth_google_url: string) {
        const col = await getCollection<AuthReqDoc>("auth_google_requests");
 
        await col.insertOne({
               auth_req_id,
+              auth_google_url,
               status: "PENDING",
               created_at: new Date(),
               updated_at: new Date(),
@@ -33,14 +34,43 @@ export async function findOneAuthReq(auth_req_id: string) {
        return { id: _id.toString(), ...data };
 }
 
-export async function updateAuthReqStatus(auth_req_id: string, status: AuthReqStatus, message: string, token: string | null= null) {
+export async function updateAuthReqStatusSuccess(auth_req_id: string, token: string) {
        const col = await getCollection<AuthReqDoc>("auth_google_requests");
 
-       const doc = await col.updateOne({ auth_req_id }, { $set: { status, updated_at: new Date(), message, token }});
+       const doc = await col.findOneAndUpdate({ auth_req_id }, { $set: { status: "SUCCESS", updated_at: new Date(), message: "Auth Success! Keep the token for authorization!", auth_google_url: null, token } }, { returnDocument: "after" });
 
        if (!doc) return null;
 
-       return
+       const { _id, ...data } = doc;
+
+       return { id: _id.toString(), ...data };
+
+}
+
+export async function updateAuthReqStatusExpired(auth_req_id: string) {
+       const col = await getCollection<AuthReqDoc>("auth_google_requests");
+
+       const doc = await col.findOneAndUpdate({ auth_req_id }, { $set: { status: "EXPIRED", updated_at: new Date(), message: "Auth Link Expired", auth_google_url: null, token: null } }, { returnDocument: "after" });
+
+       if (!doc) return null;
+
+       const { _id, ...data } = doc;
+
+       return { id: _id.toString(), ...data };
+
+}
+
+export async function updateAuthReqStatusFailed(auth_req_id: string, message = "Auth Failed") {
+       const col = await getCollection<AuthReqDoc>("auth_google_requests");
+
+       const doc = await col.findOneAndUpdate({ auth_req_id }, { $set: { status: "FAILED", updated_at: new Date(), message, auth_google_url: null, token: null } }, { returnDocument: "after" });
+
+       if (!doc) return null;
+
+       const { _id, ...data } = doc;
+
+       return { id: _id.toString(), ...data };
+
 }
 
 

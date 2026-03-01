@@ -8,7 +8,7 @@ export async function getMongoClient(){
        if(client) return client;
        
        client = new MongoClient(process.env.MONGODB_URI);
-
+       
        try {
               logger.info(`connecting to db...`);
               await client.connect();
@@ -16,6 +16,12 @@ export async function getMongoClient(){
               await client.db("test").command({ping:1});
               
               logger.info(`db connection ok!`);
+              client.on('error', (error)=>{
+                     client = null;
+                     logger.info(error.message);
+
+                     getMongoClient();
+              });
               return client;
        } catch (error) {
               logger.fatal({error},`db connection error!`);

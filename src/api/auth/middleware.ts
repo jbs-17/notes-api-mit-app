@@ -1,21 +1,33 @@
 import type { Request, Response, NextFunction, Handler } from "express";
-import { authGoogleReqIdRequiredError, authGoogleCallbackStateInvalidError, AppError, authGoogleCallbackReqExpiredError } from "../../error.js";
-import { findActiveUserById, findOneAuthReq, updateAuthReqStatus } from "./repository.js";
+import { authGoogleCallbackStateInvalidError, AppError, authGoogleCallbackReqExpiredError } from "../../error.js";
+import { findActiveUserById, findOneAuthReq, updateAuthReqStatusExpired, updateAuthReqStatusFailed, updateAuthReqStatusSuccess } from "./repository.js";
 import jwt from 'jsonwebtoken';
 import { ObjectId } from "mongodb";
-import { UserDoc } from "./types.js";
+import { AuthReqDoc, UserDoc } from "./types.js";
+import { nanoid } from "nanoid";
+import { authGoogleCheckRequestService } from "./service.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
-
-export const authGoogleReqMiddleware: Handler = async (req, res, next) => {
-       const { auth_req_id } = req.query;
-
-       // auth_req_id dari app mit
-       if (!auth_req_id)
-              throw new AppError(`Invalid Request Parameter`);
-
+export const authGoogleMakeAuthReqMiddleware: Handler = async (req, res, next) => {
        next();
 }
 
+export async function checkExpirationAuthRequest(authReqDoc: AuthReqDoc) {
+       let expired = false;
+       const diffInMills = Date.now() - authReqDoc.created_at.getTime();
+       const diffInMinutes = diffInMills / 1000 / 60;
+
+       if (diffInMinutes > 5 && authReqDoc.status === "PENDING") { // kedaluarsa jika dibuat 5 menit lalu
+              authReqDoc = await updateAuthReqStatusExpired(authReqDoc.auth_req_id);
+              expired = true;
+       }
+
+       return {
+              expired,
+              authReqDoc
+       }
+}
 
 const invalidCallbackParametersError = new AppError(`Invalid Callback Parameters`, 400);
 export const authGoogleCallbackMiddleware: Handler = async (req: Request, res: Response, next: NextFunction) => {
@@ -42,26 +54,29 @@ export const authGoogleCallbackMiddleware: Handler = async (req: Request, res: R
 
        if (!authReqDoc) throw new AppError(`Invalid Auth Request`, 404);
 
-       if (authReqDoc.status !== "PENDING")
-              throw new AppError(`Auth Request Closed with status ${authReqDoc.status}`, 400);
-
-
        // https://oauth2.example.com/auth?error=access_denied
        if (error) {
-              await updateAuthReqStatus(authReqDoc.auth_req_id, "FAILED", error.toString());
-              throw new AppError(`Auth Failed: ${error}`, 400);
+              const authReqDocUpdated = await updateAuthReqStatusFailed(authReqDoc.auth_req_id, error.toString());
+              return res.status(400).json(authReqDocUpdated);
        }
 
-       // cek apakah sudah kedaluarsa  5 menit
-       const diffInMinutes = Math.abs(Date.now() - new Date(authReqDoc.created_at).getTime()) / 1000 / 60;
-       if (diffInMinutes > 5) {
-              await updateAuthReqStatus(authReqDoc.id, "FAILED", `Auth Request Expired`);
-              throw new AppError("Auth Request Expired", 400);
-       };
+
+
+       // kalau udah sukses
+       if (authReqDoc.status === "SUCCESS")
+              return        res.type("html").sendFile("./components/auth-google-success.html", {root : process.cwd()});
+
+       // callbacck hanya mnerima yang masih statusnya pending
+       if (authReqDoc.status !== "PENDING")
+              return res.status(200).json(authReqDoc);
+
+       // jika pending tapi sudah waktu kedaluarsa
+       const isExpired = await checkExpirationAuthRequest(authReqDoc);
+       if (isExpired.expired) return res.status(400).json(isExpired.authReqDoc);
 
        // ini harus ada  : https://oauth2.example.com/auth?code=4/P7q7W91a-oMsCeLvIaQm6bTrgtp7
        if (!code || typeof code !== 'string') {
-              await updateAuthReqStatus(authReqDoc.auth_req_id, "FAILED", `Authorization code is missing`);
+              await updateAuthReqStatusFailed(authReqDoc.auth_req_id, `Authorization code is missing`);
               throw new AppError("Authorization code is missing", 400);
        }
 
@@ -71,7 +86,24 @@ export const authGoogleCallbackMiddleware: Handler = async (req: Request, res: R
 }
 
 
-export const authGoogleCheckRequestMiddleware = authGoogleReqMiddleware;
+export const authGoogleCheckRequestMiddleware: Handler = async (req, res, next) => {
+
+       const { auth_req_id } = req.query;
+
+       const authReqDoc = await authGoogleCheckRequestService(auth_req_id as string);
+
+       if (!authReqDoc) throw new AppError(`Invalid Auth Request`, 404);
+
+
+       // auth_req_id dari make request
+       if (!auth_req_id || typeof auth_req_id !== "string")
+              throw new AppError(`Invalid Request Parameter`);
+
+
+
+       res.locals.authReqDoc = authReqDoc;
+       next();
+};
 
 
 
@@ -81,7 +113,7 @@ type jwtDecoded = jwt.JwtPayload & {
        role: string
 }
 
-export const authMiddleware = async (req: Request & {user : UserDoc}, res: Response, next: NextFunction) => {
+export const authMiddleware = async (req: Request & { user: UserDoc }, res: Response, next: NextFunction) => {
        const authHeader = req.headers.authorization;
        if (!authHeader?.startsWith('Bearer ')) {
               return res.status(401).json({ message: "Invalid Token Format" });

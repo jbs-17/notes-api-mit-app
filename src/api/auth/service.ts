@@ -1,6 +1,6 @@
 import { AppError } from "../../error.js";
 import { logger } from "../../utils/logger.js";
-import { findOneAndUpdate, findOneAuthReq, insertAuthGoogleReqId, updateAuthReqStatus } from "./repository.js";
+import { findOneAndUpdate, findOneAuthReq, insertAuthGoogleReqId, updateAuthReqStatusExpired, updateAuthReqStatusFailed, updateAuthReqStatusSuccess } from "./repository.js";
 import axios from "axios";
 import jwt from 'jsonwebtoken';
 import { UserDoc } from "./types.js";
@@ -13,7 +13,7 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET;
 
 
 
-export async function authGoogleReqService(auth_req_id: string) {
+export async function authGoogleMakeAuthReqService(auth_req_id: string) {
        const stateJSON = JSON.stringify({ auth_req_id });
        const stateEncoded = Buffer.from(stateJSON).toString("base64url");
 
@@ -27,16 +27,17 @@ export async function authGoogleReqService(auth_req_id: string) {
               ["prompt", "select_account consent"]
        ]);
 
-       const authGoogleUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + param.toString();
+       const auth_google_url = `https://accounts.google.com/o/oauth2/v2/auth?` + param.toString();
 
-       await insertAuthGoogleReqId(auth_req_id);
+       await insertAuthGoogleReqId(auth_req_id, auth_google_url);
 
-       return { authGoogleUrl };
+       return { auth_google_url };
+
 }
 
 
 
-export async function authGoogleCallbackService(authReqDoc: Awaited<ReturnType<typeof findOneAuthReq>>, code: string, ip? : string) {
+export async function authGoogleCallbackService(authReqDoc: Awaited<ReturnType<typeof findOneAuthReq>>, code: string, ip?: string) {
 
        const param = new URLSearchParams();
        param.append("client_id", CLIENT_ID);
@@ -48,7 +49,7 @@ export async function authGoogleCallbackService(authReqDoc: Awaited<ReturnType<t
        const get_access_url = `https://oauth2.googleapis.com/token?` + param;
 
        // tukar kode untuk dapatkan access token, refresh token, dll
-       let access_data: { access_token: string, refresh_token: string, expires_in: string, scope: string, token_type: string, id_token : string } | null = null;
+       let access_data: { access_token: string, refresh_token: string, expires_in: string, scope: string, token_type: string, id_token: string } | null = null;
        try {
 
               const access_res = await axios.post(get_access_url, {
@@ -61,7 +62,7 @@ export async function authGoogleCallbackService(authReqDoc: Awaited<ReturnType<t
               access_data = access_res.data;
 
        } catch (error) {
-              await updateAuthReqStatus(authReqDoc.auth_req_id, "FAILED", error?.message || "Access Failed" );
+              await updateAuthReqStatusFailed(authReqDoc.auth_req_id, `Error while get access token : ${error?.message}`);
               throw error
        }
 
@@ -77,34 +78,34 @@ export async function authGoogleCallbackService(authReqDoc: Awaited<ReturnType<t
               user_google_data = data;
 
        } catch (error) {
-              await updateAuthReqStatus(authReqDoc.auth_req_id, "FAILED", "Failed to get user data" + error?.message || "");
+              await updateAuthReqStatusFailed(authReqDoc.auth_req_id, `Error whiile get user google profile data : ${error?.message}`);
               throw error;
        }
 
 
 
-       const  user = await findOneAndUpdate({
-              essential : {
-                     google_id : user_google_data.sub,
-                     picture : user_google_data.picture,
-                     email : user_google_data.email,
-                     name : user_google_data.name,
-                     refresh_token : access_data.refresh_token,
-                     google_scope : access_data?.scope?.split?.(" ")
+       const user = await findOneAndUpdate({
+              essential: {
+                     google_id: user_google_data.sub,
+                     picture: user_google_data.picture,
+                     email: user_google_data.email,
+                     name: user_google_data.name,
+                     refresh_token: access_data.refresh_token,
+                     google_scope: access_data?.scope?.split?.(" ")
               },
-              base_activity : {
-                     last_ip : ip,
-                     registration_ip : ip,
-                     last_access : new Date()
+              base_activity: {
+                     last_ip: ip,
+                     registration_ip: ip,
+                     last_access: new Date()
               }
        });
 
 
-       const token  = generateAccessToken(user);
+       const token = generateAccessToken(user);
 
-       await updateAuthReqStatus(authReqDoc.auth_req_id, "SUCCESS", "Auth Success", token);
+       await updateAuthReqStatusSuccess(authReqDoc.auth_req_id, token);
 
-       return  
+       return
 }
 
 
@@ -113,17 +114,17 @@ export async function authGoogleCallbackService(authReqDoc: Awaited<ReturnType<t
 export function generateAccessToken(user: Awaited<ReturnType<typeof findOneAndUpdate>>) {
        return jwt.sign(
               {
-                     sub: user.id, 
+                     sub: user.id,
                      role: user.security.role
               },
               process.env.JWT_SECRET as string,
               {
-                     expiresIn: '30Days' 
+                     expiresIn: '30Days'
               }
        );
 }
 
 
-export async function authGoogleCheckRequestService(auth_req_id : string) {
+export async function authGoogleCheckRequestService(auth_req_id: string) {
        return await findOneAuthReq(auth_req_id);
 }

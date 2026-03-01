@@ -1,10 +1,11 @@
 import type { Document} from "mongodb";
 
-export type AuthReqStatus = "PENDING" | "FAILED" | "SUCCESS";
+export type AuthReqStatus = "PENDING" | "FAILED" | "SUCCESS" | "EXPIRED";
 
 
 export interface AuthReqDoc {
        auth_req_id : string,
+       auth_google_url : string, 
        status : AuthReqStatus,
        message : string,
        created_at : Date,
