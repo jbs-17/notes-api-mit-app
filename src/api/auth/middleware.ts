@@ -54,6 +54,14 @@ export const authGoogleCallbackMiddleware: Handler = async (req: Request, res: R
 
        if (!authReqDoc) throw new AppError(`Invalid Auth Request`, 404);
 
+
+       // jika pending tapi sudah waktu kedaluarsa
+       const isExpired = await checkExpirationAuthRequest(authReqDoc);
+       authReqDoc = isExpired.authReqDoc;
+
+       if (authReqDoc.status === "EXPIRED")
+              return res.redirect("/auth-google-expired.html?login_status=expired");
+
        // https://oauth2.example.com/auth?error=access_denied
        if (error) {
               const authReqDocUpdated = await updateAuthReqStatusFailed(authReqDoc.auth_req_id, error.toString());
@@ -67,13 +75,6 @@ export const authGoogleCallbackMiddleware: Handler = async (req: Request, res: R
        // kalau udah sukses
        if (authReqDoc.status === "SUCCESS")
               return res.redirect("/auth-google-success.html?login_status=success");
-
-       // jika pending tapi sudah waktu kedaluarsa
-       const isExpired = await checkExpirationAuthRequest(authReqDoc);
-       authReqDoc = isExpired.authReqDoc;
-
-       if (authReqDoc.status === "EXPIRED")
-              return res.redirect("/auth-google-expired.html?login_status=expired");
 
 
        // callbacck hanya mnerima yang masih statusnya pending
