@@ -49,10 +49,10 @@
        <script>       
               setTimeout(() => {
                      const scheme = "notesapp";
-                     const host = "google.auth";
+                     const host = "auth.google";
                      const path = "/expired";
        
-                     // notesapp://google.auth/success
+                     // notesapp://auth.google/success
                      const deepLinkUrl = `${scheme}://${host}${path}`;
                      window.location.href = deepLinkUrl;
               }, 1000);
