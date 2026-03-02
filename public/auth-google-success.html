@@ -47,13 +47,15 @@
        </div>
 
        <script>
-              function sendSuccessToApp() {
-                     if (window.AppInventor) {
-                            window.AppInventor.setWebViewString("LOGIN_SUCCESS");
-                     }
-              }
+                setTimeout(() => {
+                            const scheme = "notesapp";
+                            const host = "google.auth";
+                            const path = "/success";
 
-              setTimeout(sendSuccessToApp, 2500);
+                            // notesapp://google.auth/success
+                            const deepLinkUrl = `${scheme}://${host}${path}`;
+                            window.location.href = deepLinkUrl;
+                     }, 1000);
        </script>
 
 </body>

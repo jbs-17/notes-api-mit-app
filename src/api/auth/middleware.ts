@@ -60,21 +60,21 @@ export const authGoogleCallbackMiddleware: Handler = async (req: Request, res: R
        authReqDoc = isExpired.authReqDoc;
 
        if (authReqDoc.status === "EXPIRED")
-              return res.redirect("/auth-google-expired.html?login_status=expired");
+              return res.redirect("/auth-google-expired.html?login_status=expired&auth_req_id=" + authReqDoc.auth_req_id);
 
        // https://oauth2.example.com/auth?error=access_denied
        if (error) {
               const authReqDocUpdated = await updateAuthReqStatusFailed(authReqDoc.auth_req_id, error.toString());
-              return res.redirect("/auth-google-failed.html?login_status=failed");
+              return res.redirect("/auth-google-failed.html?login_status=failed&auth_req_id=" + authReqDoc.auth_req_id);
        }
 
        // kalau udah gagal
        if (authReqDoc.status === "FAILED")
-              return res.redirect("/auth-google-failed.html?login_status=failed");
+              return res.redirect("/auth-google-failed.html?login_status=failed&auth_req_id=" + authReqDoc.auth_req_id);
 
        // kalau udah sukses
        if (authReqDoc.status === "SUCCESS")
-              return res.redirect("/auth-google-success.html?login_status=success");
+              return res.redirect("/auth-google-success.html?login_status=success&auth_req_id=" + authReqDoc.auth_req_id);
 
 
        // callbacck hanya mnerima yang masih statusnya pending

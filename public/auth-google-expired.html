@@ -46,16 +46,17 @@
               <p>Returning to the app...</p>
        </div>
 
-       <script>
-              function sendSuccessToApp() {
-                     if (window.AppInventor) {
-                            window.AppInventor.setWebViewString("LOGIN_SUCCESS");
-                     }
-              }
-
-              setTimeout(sendSuccessToApp, 2500);
+       <script>       
+              setTimeout(() => {
+                     const scheme = "notesapp";
+                     const host = "google.auth";
+                     const path = "/expired";
+       
+                     // notesapp://google.auth/success
+                     const deepLinkUrl = `${scheme}://${host}${path}`;
+                     window.location.href = deepLinkUrl;
+              }, 1000);
        </script>
-
 </body>
 
 </html>
