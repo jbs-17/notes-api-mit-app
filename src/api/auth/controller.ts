@@ -1,6 +1,6 @@
 import type { Handler } from "express";
 import { authGoogleMakeAuthReqService, authGoogleCallbackService, authGoogleCheckRequestService } from "./service.js";
-import { findOneAuthReq } from "./repository.js";
+import { findActiveUserById, findOneAuthReq } from "./repository.js";
 import { AuthReqDoc, UserDoc } from "./types.js";
 import { nanoid } from "nanoid";
 import path from "path";
@@ -34,10 +34,11 @@ export const authGoogleCheckRequestController: Handler = async (req, res, next) 
 
 
 export const getProfileController: Handler = async (req, res, next) => {
-       const { essential: { email, name, picture }, timestamps: { created_at, updated_at } } = res.locals.user as UserDoc || {};
+       const { id, essential: { email, name, picture }, timestamps: { created_at, updated_at } } = res.locals.user as Awaited<ReturnType<typeof findActiveUserById>>;
        const data = {
+              id,
               essential: { email, name, picture },
-              timestamps: { created_at, updated_at }
+              timestamps: { created_at : created_at.getTime(), updated_at : updated_at.getTime() }
        }
        res.json(data);
 }
