@@ -18,7 +18,7 @@ export async function checkExpirationAuthRequest(authReqDoc: Awaited<ReturnType<
        const diffInMills = Date.now() - authReqDoc.created_at.getTime();
        const diffInMinutes = diffInMills / 1000 / 60;
 
-       if (diffInMinutes > 1 && authReqDoc.status === "PENDING") { // kedaluarsa jika dibuat 5 menit lalu
+       if (diffInMinutes > 5 && authReqDoc.status === "PENDING") { // kedaluarsa jika dibuat 5 menit lalu
               authReqDoc = await updateAuthReqStatusExpired(authReqDoc.auth_req_id);
               expired = true;
        }
