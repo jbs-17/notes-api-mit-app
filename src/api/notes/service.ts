@@ -10,7 +10,7 @@ import { NoteDoc } from "./types.js";
 
 
 
-export const syncNotesService = async (notes: NoteDoc[], userId: string) => {
+export const pushNotesService = async (notes: NoteDoc[], userId: string) => {
        if (!notes || notes.length === 0) {
               return { message: "No notes to sync", processed: 0 };
        }
@@ -32,7 +32,7 @@ export const syncNotesService = async (notes: NoteDoc[], userId: string) => {
 }
 
 
-export const getUpdatedNotesService = async (userId: string, lastSync: number) =>{
+export const pullNotesService = async (userId: string, lastSync: number) =>{
               return await findNotesByUserId(userId, lastSync);
               
 }

@@ -12,11 +12,11 @@ const noteSchema = z.object({
        bool_deleted: z.boolean()
 });
 const notesSchema = z.array(noteSchema);
-export const syncNotesMiddleware: Handler = async (req, res, next) => {
+export const pushNotesMiddleware: Handler = async (req, res, next) => {
               await notesSchema.parseAsync(req.body);
               next();
 }
-export const getUpdatedNotesMiddleware : Handler = async (req, res, next) => {
+export const pullNotesMiddleware : Handler = async (req, res, next) => {
        const rawLastSync = req.query.lastSync as string;
 
        // Jika tidak ada lastSync, default ke 0 (untuk perangkat baru/full fetch)
