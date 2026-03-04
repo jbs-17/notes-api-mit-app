@@ -55,7 +55,7 @@ export const upsertNotes = async (notes: NoteDoc[], user_id: string) => {
 export const findNotesByUserId = async (user_id: string, lastSync: number) => {
        const col = await getCollection<NoteDoc>("notes");
 
-        return await col.find({
+        const result = await col.find({
               user_id: user_id,
               // ambil lastSync server yang lebih besar dari lastSync client 
               // mengambil semua note yang belum update di client
@@ -65,6 +65,10 @@ export const findNotesByUserId = async (user_id: string, lastSync: number) => {
               .toArray()
               ;
 
+              return result.map(({_id, ...data})=>{
+
+                     return data;
+              })
               
 }
 
