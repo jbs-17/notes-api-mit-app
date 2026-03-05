@@ -15,9 +15,10 @@ export const pushNotesService = async (notes: NoteDoc[], userId: string) => {
               return { message: "No notes to sync", processed: 0 };
        }
 
-       // membersihkan field dari is_dirty
-       const cleanedNotes = notes.map(({ is_dirty, ...rest }: any) => ({
-              ...rest,
+       //  is_dirty = false 
+       const cleanedNotes = notes.map(note=> ({
+              ...note,
+              is_dirty : false,
               user_id: userId,
        }));
 
