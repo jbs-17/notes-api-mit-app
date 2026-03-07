@@ -9,7 +9,7 @@ const noteSchema = z.object({
        string_content: z.string().min(0),
        time_created_at: z.number(),
        time_updated_at: z.number(),
-       bool_deleted: z.boolean()
+       is_deleted: z.boolean()
 });
 const notesSchema = z.array(noteSchema);
 export const pushNotesMiddleware: Handler = async (req, res, next) => {
